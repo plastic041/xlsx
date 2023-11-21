@@ -14,6 +14,9 @@ export const ITEMS = [
 export type Item = {
   id: number;
   name: string;
+  /**
+   * 신청 수량
+   */
   count: number;
 };
 
