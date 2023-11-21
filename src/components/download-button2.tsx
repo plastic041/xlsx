@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { createExcelFile, downloadXlsx } from "../lib/excel";
+import { createExcelFile2, downloadXlsx } from "../lib/excel";
 import { mockFetch } from "../lib/mock-response";
 import { match } from "ts-pattern";
+import { Spinner } from "./download-button";
 
-export function DownloadButton() {
+export function DownloadButton2() {
   const [state, setState] = useState("idle");
 
   return (
@@ -13,10 +14,10 @@ export function DownloadButton() {
         const data = await mockFetch();
 
         setState("creating");
-        const excelFile = createExcelFile(data);
+        const excelFile = createExcelFile2(data);
 
         setState("downloading");
-        downloadXlsx(excelFile, "example.xlsx");
+        downloadXlsx(excelFile, "example2.xlsx");
 
         setState("complete");
       }}
@@ -29,11 +30,5 @@ export function DownloadButton() {
         .with("complete", () => "Complete!")
         .otherwise(() => "Unknown state")}
     </button>
-  );
-}
-
-export function Spinner() {
-  return (
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
   );
 }

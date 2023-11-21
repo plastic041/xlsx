@@ -140,6 +140,64 @@ export function createExcelFile(data: FetchResponse) {
   return workbook;
 }
 
+export function createExcelFile2(data: FetchResponse) {
+  const workbook = XLSX.utils.book_new();
+  const deliveryAddressIds = [
+    ...new Set(
+      data.reservations.map((reservation) => reservation.deliveryAddressId)
+    ),
+  ];
+
+  for (const deliveryAddressId of deliveryAddressIds) {
+    const rows = [];
+    const infoRows = makeInfoRows(data);
+    const reservationInfoRows = [
+      ["배송지ID", deliveryAddressId],
+      [
+        "배송지",
+        data.reservations.filter(
+          (reservations) => reservations.deliveryAddressId === deliveryAddressId
+        )[0].deliveryAddress,
+      ],
+    ];
+
+    const foundReservations = data.reservations.filter(
+      (reservation) => reservation.deliveryAddressId === deliveryAddressId
+    );
+    const totalCount = sum(
+      foundReservations.map((reservation) => reservation.count)
+    );
+    const summaryRow = ["배송지ID", "배송지", "메뉴", "신청인", "직번", "수량"];
+    rows.push(summaryRow);
+
+    // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
+    const itemNames = [
+      ...new Set(foundReservations.map((reservation) => reservation.itemName)),
+    ];
+    for (const itemName of itemNames) {
+      const foundReservationsItemNames = foundReservations.filter(
+        (reservation) => reservation.itemName === itemName
+      );
+
+      const perItemRows = makeReservationsPerItemsRows(
+        foundReservationsItemNames
+      );
+
+      rows.push(...perItemRows);
+    }
+
+    const totalCountRow = ["", "", "", "", "총계", totalCount]; // 메뉴별 신청 목록 총계
+
+    rows.push(totalCountRow);
+
+    const totalRows = [...infoRows, ...reservationInfoRows, [], [], ...rows];
+    const worksheet = XLSX.utils.json_to_sheet(totalRows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, deliveryAddressId);
+  }
+
+  return workbook;
+}
+
 /**
  * 엑셀 파일을 다운로드합니다.
  */

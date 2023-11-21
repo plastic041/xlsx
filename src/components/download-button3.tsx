@@ -2,8 +2,9 @@ import { useState } from "react";
 import { createExcelFile, downloadXlsx } from "../lib/excel";
 import { mockFetch } from "../lib/mock-response";
 import { match } from "ts-pattern";
+import { Spinner } from "./download-button";
 
-export function DownloadButton() {
+export function DownloadButton3() {
   const [state, setState] = useState("idle");
 
   return (
@@ -29,11 +30,5 @@ export function DownloadButton() {
         .with("complete", () => "Complete!")
         .otherwise(() => "Unknown state")}
     </button>
-  );
-}
-
-export function Spinner() {
-  return (
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
   );
 }
