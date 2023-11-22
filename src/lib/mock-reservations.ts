@@ -3,7 +3,7 @@ import { ITEMS } from "./mock-items";
 
 faker.seed(0);
 
-const CITIES = [
+export const CITIES = [
   "서울",
   "경기",
   "인천",

@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { createExcelFile, downloadXlsx } from "../lib/excel";
+import { createExcelFile3, downloadXlsx } from "../lib/excel";
 import { mockFetch } from "../lib/mock-response";
 import { match } from "ts-pattern";
 import { Spinner } from "./download-button";
+import { Reservation } from "../lib/mock-reservations";
 
-export function DownloadButton3() {
+/*클릭한 배송지 파일 한개만 다운로드 */
+export function DownloadButton3({
+  deliveryAddress,
+}: {
+  deliveryAddress: Reservation["deliveryAddress"];
+}) {
   const [state, setState] = useState("idle");
 
   return (
@@ -14,16 +20,16 @@ export function DownloadButton3() {
         const data = await mockFetch();
 
         setState("creating");
-        const excelFile = createExcelFile(data);
+        const excelFile = createExcelFile3(data, deliveryAddress);
 
         setState("downloading");
-        downloadXlsx(excelFile, "example.xlsx");
+        downloadXlsx(excelFile, `${deliveryAddress}.xlsx`);
 
         setState("complete");
       }}
     >
       {match(state)
-        .with("idle", () => "Download")
+        .with("idle", () => `${deliveryAddress}`)
         .with("loading", () => "Loading...")
         .with("creating", () => <Spinner />)
         .with("downloading", () => "Downloading...")
