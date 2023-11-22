@@ -10,8 +10,9 @@ export function App() {
       <br />
       <DownloadButton2 />
       <br />
-      {CITIES.map((item) => (
+      {CITIES.map((item, idx) => (
         <DownloadButton3
+          key={idx}
           deliveryAddress={item as Reservation["deliveryAddress"]}
         />
       ))}

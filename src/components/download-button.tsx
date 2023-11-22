@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createExcelFile, downloadXlsx } from "../lib/excel";
+//import { createExcelFile, downloadXlsx } from "../lib/excel";
+import { createExcelFileStyle, downloadXlsxStyle } from "../lib/excel2";
 import { mockFetch } from "../lib/mock-response";
 import { match } from "ts-pattern";
 
@@ -13,10 +14,10 @@ export function DownloadButton() {
         const data = await mockFetch();
 
         setState("creating");
-        const excelFile = createExcelFile(data);
+        const excelFile = createExcelFileStyle(data);
 
         setState("downloading");
-        downloadXlsx(excelFile, "example.xlsx");
+        downloadXlsxStyle(excelFile, "example.xlsx");
 
         setState("complete");
       }}

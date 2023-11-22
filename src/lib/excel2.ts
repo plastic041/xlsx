@@ -1,22 +1,40 @@
-import XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 import { sum } from "./utils";
 import type { FetchResponse } from "./mock-response";
 import type { Item } from "./mock-items";
 import type { Reservation } from "./mock-reservations";
 
 /**
- * 요약 정보를 생성합니다.
+ 스타일을 적용한 코드입니다. 라이브러리를 바꾸어서 혹시 몰라 파일을 분리했습니다.
  */
+const styleHeader = {
+  font: { bold: true },
+  fill: { fgColor: { rgb: "808080" } },
+};
+
+const styleContent = {
+  fill: { fgColor: { rgb: "D3D3D3" } },
+};
+
 function makeInfoRows(info: { factory: string; date: string }) {
   return [
-    ["지역", info.factory],
-    ["배송일", info.date],
+    [
+      {
+        v: "지역",
+        s: styleHeader,
+      },
+      info.factory,
+    ],
+    [
+      {
+        v: "배송일",
+        s: styleHeader,
+      },
+      info.date,
+    ],
   ];
 }
 
-/**
- * 상품 정보 요약 줄을 생성합니다.
- */
 function makeItemRows(items: Item[]) {
   // 메뉴, 총계, ...items.names
   // 수량, 총계 수량, ...items.counts
@@ -26,17 +44,29 @@ function makeItemRows(items: Item[]) {
   );
   const total = sum(counts);
   return [
-    ["메뉴", "총계", ...names],
-    ["수량", total, ...counts],
+    [
+      {
+        v: "메뉴",
+        s: styleHeader,
+      },
+      {
+        v: "총계",
+        s: styleHeader,
+      },
+      ...names.map((item) => ({ v: item, s: styleHeader })),
+    ],
+    [
+      {
+        v: "수량",
+        s: styleHeader,
+      },
+      total,
+      ...counts,
+    ],
   ];
 }
 
-type ReservationRows = (string | number)[][];
-/**
- * 신청 정보 요약 줄을 생성합니다.
- * 배송지별, 메뉴별로 묶어서 생성합니다.
- */
-function makeReservationsRows(reservations: Reservation[]): ReservationRows {
+function makeReservationsRows(reservations: Reservation[]) {
   // 배송지ID, 배송지, 메뉴, 신청인, 직번, 수량
 
   // 배송지ID별로 묶기
@@ -45,7 +75,7 @@ function makeReservationsRows(reservations: Reservation[]): ReservationRows {
       reservations.map((reservation) => reservation.deliveryAddressId)
     ),
   ];
-  const rows: ReservationRows = [];
+  const rows = [];
   for (const deliveryAddressId of deliveryAddressIds) {
     const foundReservations = reservations.filter(
       (reservation) => reservation.deliveryAddressId === deliveryAddressId
@@ -54,7 +84,7 @@ function makeReservationsRows(reservations: Reservation[]): ReservationRows {
       foundReservations.map((reservation) => reservation.count)
     );
     const summaryRow = ["배송지ID", "배송지", "메뉴", "신청인", "직번", "수량"];
-    rows.push(summaryRow);
+    rows.push(summaryRow.map((item) => ({ v: item, s: styleHeader })));
 
     // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
     const itemNames = [
@@ -72,7 +102,14 @@ function makeReservationsRows(reservations: Reservation[]): ReservationRows {
       rows.push(...perItemRows);
     }
 
-    const totalCountRow = ["", "", "", "", "총계", totalCount]; // 메뉴별 신청 목록 총계
+    const totalCountRow = [
+      "",
+      "",
+      "",
+      "",
+      { v: "총계", s: styleContent },
+      { v: totalCount, s: styleContent },
+    ]; // 메뉴별 신청 목록 총계
 
     rows.push(totalCountRow);
 
@@ -108,7 +145,7 @@ function makeReservationsPerItemsRows(reservations: Reservation[]) {
       "---",
       sum(foundReservationsItemNames.map((reservation) => reservation.count)),
     ];
-    rows.push(summaryRow); // 메뉴별 요약
+    rows.push(summaryRow.map((item) => ({ v: item, s: styleContent }))); // 메뉴별 요약
 
     rows.push(
       ...foundReservationsItemNames.map((reservation) => [
@@ -128,8 +165,8 @@ function makeReservationsPerItemsRows(reservations: Reservation[]) {
 function makeReservationsIdRows(
   reservations: Reservation[],
   deliveryAddressId: Reservation["deliveryAddressId"]
-): ReservationRows {
-  const rows: ReservationRows = [];
+) {
+  const rows = [];
   const foundReservations = reservations.filter(
     (reservation) => reservation.deliveryAddressId === deliveryAddressId
   );
@@ -137,7 +174,7 @@ function makeReservationsIdRows(
     foundReservations.map((reservation) => reservation.count)
   );
   const summaryRow = ["배송지ID", "배송지", "메뉴", "신청인", "직번", "수량"];
-  rows.push(summaryRow);
+  rows.push(summaryRow.map((item) => ({ v: item, s: styleHeader })));
 
   const itemNames = [
     ...new Set(foundReservations.map((reservation) => reservation.itemName)),
@@ -154,7 +191,14 @@ function makeReservationsIdRows(
     rows.push(...perItemRows);
   }
 
-  const totalCountRow = ["", "", "", "", "총계", totalCount]; // 메뉴별 신청 목록 총계
+  const totalCountRow = [
+    "",
+    "",
+    "",
+    "",
+    { v: "총계", s: styleContent },
+    { v: totalCount, s: styleContent },
+  ]; // 메뉴별 신청 목록 총계
   rows.push(totalCountRow);
   return rows;
 }
@@ -162,19 +206,18 @@ function makeReservationsIdRows(
 /**
  * 엑셀 파일을 생성합니다.
  */
-export function createExcelFile(data: FetchResponse) {
+export function createExcelFileStyle(data: FetchResponse) {
+  const workbook = XLSX.utils.book_new();
   const infoRows = makeInfoRows(data);
   const itemRows = makeItemRows(data.items);
   const reservationRows = makeReservationsRows(data.reservations);
-  const rows = [...infoRows, [], ...itemRows, [], ...reservationRows];
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-
-  const workbook = XLSX.utils.book_new();
+  const totalRows = [...infoRows, [], ...itemRows, [], ...reservationRows];
+  const worksheet = XLSX.utils.aoa_to_sheet(totalRows);
   XLSX.utils.book_append_sheet(workbook, worksheet, "rows");
   return workbook;
 }
 
-export function createExcelFile2(data: FetchResponse) {
+export function createExcelFileStyle2(data: FetchResponse) {
   const workbook = XLSX.utils.book_new();
   const deliveryAddressIds = [
     ...new Set(
@@ -185,9 +228,9 @@ export function createExcelFile2(data: FetchResponse) {
   for (const deliveryAddressId of deliveryAddressIds) {
     const infoRows = makeInfoRows(data);
     const reservationInfoRows = [
-      ["배송지ID", deliveryAddressId],
+      [{ v: "배송지ID", s: styleHeader }, deliveryAddressId],
       [
-        "배송지",
+        { v: "배송지", s: styleHeader },
         data.reservations.filter(
           (reservations) => reservations.deliveryAddressId === deliveryAddressId
         )[0].deliveryAddress,
@@ -196,14 +239,14 @@ export function createExcelFile2(data: FetchResponse) {
 
     const rows = makeReservationsIdRows(data.reservations, deliveryAddressId);
     const totalRows = [...infoRows, ...reservationInfoRows, [], [], ...rows];
-    const worksheet = XLSX.utils.json_to_sheet(totalRows);
+    const worksheet = XLSX.utils.aoa_to_sheet(totalRows);
     XLSX.utils.book_append_sheet(workbook, worksheet, deliveryAddressId);
   }
 
   return workbook;
 }
 
-export function createExcelFile3(
+export function createExcelFileStyle3(
   data: FetchResponse,
   deliveryAddress: Reservation["deliveryAddress"]
 ) {
@@ -215,21 +258,19 @@ export function createExcelFile3(
     )[0].deliveryAddressId;
 
   const reservationInfoRows = [
-    ["배송지ID", deliveryAddressId],
-    ["배송지", deliveryAddress],
+    [{ v: "배송지ID", s: styleHeader }, deliveryAddressId],
+    [{ v: "배송지", s: styleHeader }, deliveryAddress],
   ];
 
   const rows = makeReservationsIdRows(data.reservations, deliveryAddressId);
+
   const totalRows = [...infoRows, ...reservationInfoRows, [], [], ...rows];
-  const worksheet = XLSX.utils.json_to_sheet(totalRows);
-  XLSX.utils.book_append_sheet(workbook, worksheet, deliveryAddress);
+  const worksheet = XLSX.utils.aoa_to_sheet(totalRows);
+  XLSX.utils.book_append_sheet(workbook, worksheet, deliveryAddressId);
 
   return workbook;
 }
 
-/**
- * 엑셀 파일을 다운로드합니다.
- */
-export function downloadXlsx(workbook: XLSX.WorkBook, filename: string) {
+export function downloadXlsxStyle(workbook: XLSX.WorkBook, filename: string) {
   XLSX.writeFile(workbook, filename);
 }
