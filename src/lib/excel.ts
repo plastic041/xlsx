@@ -216,12 +216,7 @@ export function createExcelFile3(
 
   const reservationInfoRows = [
     ["배송지ID", deliveryAddressId],
-    [
-      "배송지",
-      data.reservations.filter(
-        (reservations) => reservations.deliveryAddressId === deliveryAddressId
-      )[0].deliveryAddress,
-    ],
+    ["배송지", deliveryAddress],
   ];
 
   const rows = makeReservationsIdRows(data.reservations, deliveryAddressId);
