@@ -1,8 +1,9 @@
 import XLSX from "xlsx-js-style";
 import { sum } from "./utils";
-import type { FetchResponse } from "./mock-response";
+import type { FetchResponse, FetchOrderResponse } from "./mock-response";
 import type { Item } from "./mock-items";
 import type { Reservation } from "./mock-reservations";
+import { Orders } from "./mock-orders";
 
 /**
  스타일을 적용한 코드입니다. 라이브러리를 바꾸어서 혹시 몰라 파일을 분리했습니다.
@@ -32,6 +33,41 @@ function makeInfoRows(info: { factory: string; date: string }) {
       },
       info.date,
     ],
+  ];
+}
+
+function makeInfoRows2(info: { factory: string; date: string }) {
+  return [
+    [
+      {
+        v: "지역",
+        s: styleHeader,
+      },
+      info.factory,
+    ],
+    [
+      {
+        v: "신청일",
+        s: styleHeader,
+      },
+      info.date,
+    ],
+  ];
+}
+
+function makeOrderInfoRows(info: { totalCount: number; totalPrice: number }) {
+  return [
+    [
+      {
+        v: "총 건수",
+        s: styleHeader,
+      },
+      {
+        v: "총 매출금액",
+        s: styleHeader,
+      },
+    ],
+    [info.totalCount, info.totalPrice],
   ];
 }
 
@@ -203,6 +239,101 @@ function makeReservationsIdRows(
   return rows;
 }
 
+/*기존 makeReservationsRows makeReservationsPerItemsRows 함수를 매출 내역 엑셀 생성을 위해 일부 변경했습니다.*/
+function makeOrderRows(orders: Orders[]) {
+  // 배송지ID, 배송지, 메뉴, 신청인, 직번, 수량, 금액
+
+  // 배송지ID별로 묶기
+  const deliveryAddressIds = [
+    ...new Set(orders.map((order) => order.deliveryAddressId)),
+  ];
+
+  const rows = [];
+  for (const deliveryAddressId of deliveryAddressIds) {
+    const foundOrders = orders.filter(
+      (order) => order.deliveryAddressId === deliveryAddressId
+    );
+    const totalCount = sum(foundOrders.map((order) => order.count));
+    const totalPrice = sum(foundOrders.map((order) => order.price));
+    const summaryRow = [
+      "배송지ID",
+      "배송지",
+      "메뉴",
+      "신청인",
+      "직번",
+      "수량",
+      "금액",
+    ];
+    rows.push(summaryRow.map((item) => ({ v: item, s: styleHeader })));
+
+    // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
+    const itemNames = [...new Set(foundOrders.map((order) => order.itemName))];
+    for (const itemName of itemNames) {
+      const foundOrdersItemNames = foundOrders.filter(
+        (order) => order.itemName === itemName
+      );
+
+      const perItemRows = makeOrderPerItemsRows(foundOrdersItemNames);
+
+      rows.push(...perItemRows);
+    }
+
+    const totalCountRow = [
+      "",
+      "",
+      "",
+      "",
+      { v: "합계", s: styleContent },
+      { v: totalCount, s: styleContent },
+      { v: totalPrice, s: styleContent },
+    ]; // 메뉴별 신청 목록 총계
+
+    rows.push(totalCountRow);
+
+    // 여백 1줄
+    rows.push([]);
+  }
+
+  return rows;
+}
+
+function makeOrderPerItemsRows(orders: Orders[]) {
+  const rows = [];
+
+  // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
+  const itemNames = [...new Set(orders.map((order) => order.itemName))];
+  for (const itemName of itemNames) {
+    const foundOrdersItemNames = orders.filter(
+      (order) => order.itemName === itemName
+    );
+    const firstOrder = foundOrdersItemNames[0];
+    const summaryRow = [
+      firstOrder.deliveryAddressId,
+      firstOrder.deliveryAddress,
+      firstOrder.itemName,
+      "---",
+      "---",
+      sum(foundOrdersItemNames.map((order) => order.count)),
+      sum(foundOrdersItemNames.map((order) => order.price)),
+    ];
+    rows.push(summaryRow.map((item) => ({ v: item, s: styleContent }))); // 메뉴별 요약
+
+    rows.push(
+      ...foundOrdersItemNames.map((order) => [
+        order.deliveryAddressId,
+        order.deliveryAddress,
+        order.itemName,
+        order.userInfo.name,
+        order.userInfo.userCode,
+        order.count,
+        order.price,
+      ])
+    ); // 메뉴별 신청 목록
+  }
+
+  return rows;
+}
+
 /**
  * 엑셀 파일을 생성합니다.
  */
@@ -268,6 +399,24 @@ export function createExcelFileStyle3(
   const worksheet = XLSX.utils.aoa_to_sheet(totalRows);
   XLSX.utils.book_append_sheet(workbook, worksheet, deliveryAddressId);
 
+  return workbook;
+}
+
+/*매출내역 엑셀 생성 함수  */
+export function createExcelFileStyle4(data: FetchOrderResponse[]) {
+  const workbook = XLSX.utils.book_new();
+  data.sort((a, b) => a.factory.localeCompare(b.factory)); //공장이름별로 보이는 것이 나을 거 같아서 일단 추가
+
+  const totalRows = [];
+  for (const order of data) {
+    const infoRows = makeInfoRows2(order);
+    const orderInfoRows = makeOrderInfoRows(order);
+    const orderRows = makeOrderRows(order.orders);
+    totalRows.push(...infoRows, [], ...orderInfoRows, [], ...orderRows, []);
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(totalRows);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "매출내역");
   return workbook;
 }
 

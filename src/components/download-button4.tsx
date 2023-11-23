@@ -1,24 +1,24 @@
 import { useState } from "react";
-//import { createExcelFile, downloadXlsx } from "../lib/excel";
-import { createExcelFileStyle, downloadXlsxStyle } from "../lib/excel2";
-import { mockFetch } from "../lib/mock-response";
+import { createExcelFileStyle4, downloadXlsxStyle } from "../lib/excel2";
+import { mockOrderFetch } from "../lib/mock-response";
 import { match } from "ts-pattern";
+import { Spinner } from "./download-button";
 
-export function DownloadButton() {
+/*매출내역 전체 엑셀파일 다운로드 */
+export function DownloadButton4() {
   const [state, setState] = useState("idle");
 
   return (
     <button
       onClick={async () => {
         setState("loading");
-        const data = await mockFetch();
-        console.log(data);
+        const data = await mockOrderFetch();
 
         setState("creating");
-        const excelFile = createExcelFileStyle(data);
+        const excelFile = createExcelFileStyle4(data);
 
         setState("downloading");
-        downloadXlsxStyle(excelFile, "example.xlsx");
+        downloadXlsxStyle(excelFile, "exampleOrder.xlsx");
 
         setState("complete");
       }}
@@ -31,11 +31,5 @@ export function DownloadButton() {
         .with("complete", () => "Complete!")
         .otherwise(() => "Unknown state")}
     </button>
-  );
-}
-
-export function Spinner() {
-  return (
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
   );
 }

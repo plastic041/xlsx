@@ -20,6 +20,12 @@ export type Item = {
   count: number;
 };
 
+/*매출내역의 아이템 타입은 수량이 없어서 일단 분리했습니다.*/
+export type OrderItem = {
+  id: number;
+  name: string;
+};
+
 export function mockFetchItems(): {
   items: Item[];
 } {
@@ -28,5 +34,12 @@ export function mockFetchItems(): {
     name: faker.helpers.arrayElement(ITEMS),
     count: faker.number.int({ min: 1, max: 100 }),
   }));
+  return { items };
+}
+
+export function mockFetchOrderItems(): {
+  items: OrderItem[];
+} {
+  const items = ITEMS.map((item) => ({ id: faker.number.int(), name: item }));
   return { items };
 }
