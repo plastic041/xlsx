@@ -12,7 +12,6 @@ export function DownloadButton() {
       onClick={async () => {
         setState("loading");
         const data = await mockFetch();
-        console.log(data);
 
         setState("creating");
         const excelFile = createExcelFileStyle(data);
