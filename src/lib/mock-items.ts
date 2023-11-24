@@ -37,6 +37,7 @@ export function mockFetchItems(): {
   return { items };
 }
 
+/*중복없는 아이템 배열 */
 export function mockFetchOrderItems(): {
   items: OrderItem[];
 } {

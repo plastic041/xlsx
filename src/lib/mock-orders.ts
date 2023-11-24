@@ -5,15 +5,18 @@ import { ITEMS } from "./mock-items";
 faker.seed(0);
 
 export type Orders = {
-  deliveryAddressId: Reservation["deliveryAddressId"];
-  deliveryAddress: Reservation["deliveryAddress"];
-  itemName: string;
-  userInfo: {
-    name: string;
-    userCode: string;
+  deliveryInfo: {
+    code: Reservation["deliveryAddressId"] /*API명세에서는 code: number, name: string이지만 목데이터를 사용하려고 변경하지 않았습니다. */;
+    name: Reservation["deliveryAddress"];
   };
-  count: number;
-  price: number;
+  orderInfo: {
+    employeeName: string;
+    employeeNum: string;
+    deliveryDate: string;
+    itemName: string;
+    count: number;
+    price: number;
+  };
 };
 
 export function mockFetchOrders(): {
@@ -22,15 +25,18 @@ export function mockFetchOrders(): {
   const orders = Array.from({ length: 100 }, () => {
     const city = faker.helpers.arrayElement(CITIES);
     return {
-      deliveryAddressId: `배송지-${city}` as const,
-      deliveryAddress: city,
-      itemName: faker.helpers.arrayElement(ITEMS),
-      userInfo: {
-        name: faker.person.firstName(),
-        userCode: faker.string.uuid(),
+      deliveryInfo: {
+        code: `배송지-${city}` as const,
+        name: city,
       },
-      count: faker.number.int({ min: 1, max: 100 }),
-      price: faker.number.int({ min: 1, max: 100000 }),
+      orderInfo: {
+        itemName: faker.helpers.arrayElement(ITEMS),
+        deliveryDate: faker.date.recent().toISOString().split("T")[0],
+        employeeName: faker.person.firstName(),
+        employeeNum: faker.string.uuid(),
+        count: faker.number.int({ min: 1, max: 100 }),
+        price: faker.number.int({ min: 1, max: 100000 }),
+      },
     };
   });
   return { orders };
