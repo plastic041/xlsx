@@ -36,25 +36,30 @@ function makeInfoRows(info: { factory: string; date: string }) {
   ];
 }
 
-function makeInfoRows2(info: { factory: string; date: string }) {
+/*매출내역 엑셀 생성 관련 함수  */
+function makeInfoRows2(info: {
+  workingSpaceArea: string;
+  reservationDate: string;
+}) {
   return [
     [
       {
         v: "지역",
         s: styleHeader,
       },
-      info.factory,
+      info.workingSpaceArea,
     ],
     [
       {
         v: "신청일",
         s: styleHeader,
       },
-      info.date,
+      info.reservationDate,
     ],
   ];
 }
 
+/*매출내역 엑셀 생성 관련 함수  */
 function makeOrderInfoRows(info: { totalCount: number; totalPrice: number }) {
   return [
     [
@@ -245,16 +250,16 @@ function makeOrderRows(orders: Orders[]) {
 
   // 배송지ID별로 묶기
   const deliveryAddressIds = [
-    ...new Set(orders.map((order) => order.deliveryAddressId)),
+    ...new Set(orders.map((order) => order.deliveryInfo.code)),
   ];
 
   const rows = [];
   for (const deliveryAddressId of deliveryAddressIds) {
     const foundOrders = orders.filter(
-      (order) => order.deliveryAddressId === deliveryAddressId
+      (order) => order.deliveryInfo.code === deliveryAddressId
     );
-    const totalCount = sum(foundOrders.map((order) => order.count));
-    const totalPrice = sum(foundOrders.map((order) => order.price));
+    const totalCount = sum(foundOrders.map((order) => order.orderInfo.count));
+    const totalPrice = sum(foundOrders.map((order) => order.orderInfo.price));
     const summaryRow = [
       "배송지ID",
       "배송지",
@@ -267,10 +272,12 @@ function makeOrderRows(orders: Orders[]) {
     rows.push(summaryRow.map((item) => ({ v: item, s: styleHeader })));
 
     // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
-    const itemNames = [...new Set(foundOrders.map((order) => order.itemName))];
+    const itemNames = [
+      ...new Set(foundOrders.map((order) => order.orderInfo.itemName)),
+    ];
     for (const itemName of itemNames) {
       const foundOrdersItemNames = foundOrders.filter(
-        (order) => order.itemName === itemName
+        (order) => order.orderInfo.itemName === itemName
       );
 
       const perItemRows = makeOrderPerItemsRows(foundOrdersItemNames);
@@ -301,32 +308,34 @@ function makeOrderPerItemsRows(orders: Orders[]) {
   const rows = [];
 
   // 배송지ID별로 묶인 것 중에서 메뉴별로 묶기
-  const itemNames = [...new Set(orders.map((order) => order.itemName))];
+  const itemNames = [
+    ...new Set(orders.map((order) => order.orderInfo.itemName)),
+  ];
   for (const itemName of itemNames) {
     const foundOrdersItemNames = orders.filter(
-      (order) => order.itemName === itemName
+      (order) => order.orderInfo.itemName === itemName
     );
     const firstOrder = foundOrdersItemNames[0];
     const summaryRow = [
-      firstOrder.deliveryAddressId,
-      firstOrder.deliveryAddress,
-      firstOrder.itemName,
+      firstOrder.deliveryInfo.code,
+      firstOrder.deliveryInfo.name,
+      firstOrder.orderInfo.itemName,
       "---",
       "---",
-      sum(foundOrdersItemNames.map((order) => order.count)),
-      sum(foundOrdersItemNames.map((order) => order.price)),
+      sum(foundOrdersItemNames.map((order) => order.orderInfo.count)),
+      sum(foundOrdersItemNames.map((order) => order.orderInfo.price)),
     ];
     rows.push(summaryRow.map((item) => ({ v: item, s: styleContent }))); // 메뉴별 요약
 
     rows.push(
       ...foundOrdersItemNames.map((order) => [
-        order.deliveryAddressId,
-        order.deliveryAddress,
-        order.itemName,
-        order.userInfo.name,
-        order.userInfo.userCode,
-        order.count,
-        order.price,
+        order.deliveryInfo.code,
+        order.deliveryInfo.name,
+        order.orderInfo.itemName,
+        order.orderInfo.employeeName,
+        order.orderInfo.employeeNum,
+        order.orderInfo.count,
+        order.orderInfo.price,
       ])
     ); // 메뉴별 신청 목록
   }
@@ -405,13 +414,15 @@ export function createExcelFileStyle3(
 /*매출내역 엑셀 생성 함수  */
 export function createExcelFileStyle4(data: FetchOrderResponse[]) {
   const workbook = XLSX.utils.book_new();
-  data.sort((a, b) => a.factory.localeCompare(b.factory)); //공장이름별로 보이는 것이 나을 거 같아서 일단 추가
+  data.sort((a, b) =>
+    a.totalInfo.workingSpaceArea.localeCompare(b.totalInfo.workingSpaceArea)
+  ); //목데이터라 정렬이 안되어 공장이름별로 보이는 것이 나을 거 같아서 추가했습니다. 백엔드에서 정렬해주면 삭제하면 될거 같습니다.
 
   const totalRows = [];
   for (const order of data) {
-    const infoRows = makeInfoRows2(order);
-    const orderInfoRows = makeOrderInfoRows(order);
-    const orderRows = makeOrderRows(order.orders);
+    const infoRows = makeInfoRows2(order.totalInfo);
+    const orderInfoRows = makeOrderInfoRows(order.totalInfo);
+    const orderRows = makeOrderRows(order.data);
     totalRows.push(...infoRows, [], ...orderInfoRows, [], ...orderRows, []);
   }
 

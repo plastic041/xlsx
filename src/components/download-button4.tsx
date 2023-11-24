@@ -13,13 +13,12 @@ export function DownloadButton4() {
       onClick={async () => {
         setState("loading");
         const data = await mockOrderFetch();
-        console.log(data);
 
         setState("creating");
-        //const excelFile = createExcelFileStyle4(data);
+        const excelFile = createExcelFileStyle4(data);
 
         setState("downloading");
-        // downloadXlsxStyle(excelFile, "exampleOrder.xlsx");
+        downloadXlsxStyle(excelFile, "exampleOrder.xlsx");
 
         setState("complete");
       }}
